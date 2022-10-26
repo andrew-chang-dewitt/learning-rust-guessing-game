@@ -7,9 +7,11 @@ use std::{
     fmt::Arguments,
     cmp::Ordering, num::ParseIntError
 };
-use rand::Rng;
+use rand::{Rng, rngs::ThreadRng};
 
 const INVALID_CHOICE: &str = "Invalid choice!";
+const MIN_SECRET: u8 = 0;
+const MAX_SECRET: u8 = 100;
 
 /*
  * Main
@@ -21,8 +23,8 @@ fn main() {
     let mut output = io::stdout();
     let stdin = io::stdin();
     let mut input = stdin.lock();
-    // get random number generator
-    let mut rnd = rand::thread_rng();
+    // get secret number generator
+    let mut rnd = NumberGenerator::new();
 
     // greet the user
     write(&mut output, WriteArgs::Str( "Welcome to the guessing game!\n\n" ));
@@ -41,7 +43,7 @@ fn main() {
                 match choice {
                     // play game -> enter game
                     1 => {
-                        let game_result = play_game(&mut rnd, &mut output, &mut input);
+                        let game_result = play_game(|| rnd.gen_secret(), &mut output, &mut input);
                         if let Err(value) = game_result {
                             match value {
                                 GameError::Quit => {
@@ -146,10 +148,34 @@ fn write(mut writer: impl Write, args: WriteArgs) {
 /*
  * gen_num
  *
- * generage a random number between 1 & 100
+ * generate a secret number between MIN_SECRET & MAX_SECRET
  */
-fn gen_num(rnd: &mut impl Rng) -> u8 {
-    return rnd.gen_range(0,100);
+struct NumberGenerator {
+    thread_rng: Option<ThreadRng>
+}
+
+impl NumberGenerator {
+    fn new() -> Self {
+        NumberGenerator {
+            thread_rng: None,
+        }
+    }
+
+    fn gen_secret(&mut self) -> u8 {
+        self._get_rng().gen_range(MIN_SECRET, MAX_SECRET)
+    }
+
+    fn _get_rng(&mut self) -> ThreadRng {
+        match self.thread_rng {
+            Some(instance) => instance,
+            None => self._init_rng(),
+        }
+    }
+
+    fn _init_rng(&mut self) -> ThreadRng {
+        self.thread_rng = Some(rand::thread_rng());
+        self._get_rng()
+    }
 }
 
 /*
@@ -174,24 +200,24 @@ fn evaluate(actual: u8, expected: u8) -> Result<(), String> {
  * Returns Ok when the loop ends. Exits loop early & returns Err if user enters "quit" instead of
  * a guess.
  */
+#[derive(Debug)]
 enum GameError {
     Quit,
     Unknown,
 }
 
 fn play_game(
-    mut rnd: impl Rng,
+    mut get_secret: impl FnMut() -> u8,
     mut writer: impl Write,
     mut reader: impl BufRead,
 ) -> Result<(), GameError> {
     // generate secret number
-    let secret = gen_num(&mut rnd);
-
+    let secret = get_secret();
     // create variable to store game result
     let mut res: Result<(), GameError> = Err(GameError::Unknown);
-
     // set up loop
     let mut keep_guessing = true;
+
     while keep_guessing {
         // prompt for guess
         write(&mut writer, WriteArgs::Str("Guess a number...\n"));
@@ -300,14 +326,21 @@ mod tests {
         }
     }
 
+    enum ReaderValues {
+        One(String),
+        Many(Vec<String>),
+    }
+
     struct TestReader {
-        value: String
+        values: ReaderValues,
+        next_call: usize,
     }
 
     impl TestReader {
-        fn new(value: String) -> TestReader {
+        fn new(values: ReaderValues) -> TestReader {
             TestReader {
-                value
+                values,
+                next_call: 0,
             }
         }
     }
@@ -322,8 +355,20 @@ mod tests {
         }
 
         fn read_line(&mut self, buf: &mut String) -> io::Result<usize> {
-            buf.push_str(&self.value);
-            Ok(buf.len())
+            match &self.values {
+                ReaderValues::One(value) => {
+                    buf.push_str(value.as_str());
+                    Ok(buf.len())
+                },
+                ReaderValues::Many(values) => {
+                    if let Some(value) = values.get(self.next_call) {
+                        buf.push_str(value.as_str());
+                        Ok(buf.len())
+                    } else {
+                        Err(io::Error::new(io::ErrorKind::Other, "No more values to read."))
+                    }
+                },
+            }
         }
     }
 
@@ -333,25 +378,51 @@ mod tests {
         }
 
         fn read_to_string(&mut self, buf: &mut String) -> io::Result<usize> {
-            buf.push_str(&self.value);
-            Ok(buf.len())
+            match &self.values {
+                ReaderValues::One(value) => {
+                    buf.push_str(value.as_str());
+                    Ok(buf.len())
+                },
+                ReaderValues::Many(values) => {
+                    if let Some(value) = values.get(self.next_call) {
+                        buf.push_str(value.as_str());
+                        Ok(buf.len())
+                    } else {
+                        Err(io::Error::new(io::ErrorKind::Other, "No more values to read."))
+                    }
+                },
+            }
         }
     }
 
-    fn setup() -> (TestWriter, TestReader) {
-        setup_with_input("1")
+    fn setup_io() -> (TestWriter, TestReader) {
+        setup_io_with_input("1")
     }
 
-    fn setup_with_input(input: &str) -> (TestWriter, TestReader) {
+    fn setup_io_with_input(input: &str) -> (TestWriter, TestReader) {
         let writer = TestWriter::new();
-        let reader = TestReader::new(String::from(input));
+        let reader = TestReader::new(ReaderValues::One( String::from(input) ));
+
+        (writer, reader)
+    }
+
+    fn setup_io_with_many_inputs(inputs: &[&str]) -> (TestWriter, TestReader) {
+        let writer = TestWriter::new();
+
+        let mut values: Vec<String> = Vec::new();
+        for input in inputs {
+            let value: &str = input;
+            values.push(String::from(value));
+        }
+
+        let reader = TestReader::new(ReaderValues::Many(values));
 
         (writer, reader)
     }
 
     #[test]
     fn menu_prints_generic_first_line() {
-        let ( mut writer, reader ) = setup();
+        let ( mut writer, reader ) = setup_io();
         let choices = ["first", "second"];
         menu(&choices, &mut writer, reader).unwrap();
 
@@ -360,7 +431,7 @@ mod tests {
 
     #[test]
     fn menu_passes_given_choices_to_given_print_fn() {
-        let ( mut writer, reader ) = setup();
+        let ( mut writer, reader ) = setup_io();
         let choices = ["first", "second"];
         menu(&choices, &mut writer, reader).unwrap();
 
@@ -370,7 +441,7 @@ mod tests {
 
     #[test]
     fn menu_returns_user_input() {
-        let ( writer, reader ) = setup_with_input("1");
+        let ( writer, reader ) = setup_io_with_input("1");
         let choices = ["choice"];
         let response = menu(&choices, writer, reader);
 
@@ -380,7 +451,7 @@ mod tests {
     #[test]
     #[should_panic( expected = "Invalid choice!" )]
     fn menu_returns_error_if_user_input_is_not_a_number() {
-        let ( writer, reader ) = setup_with_input("not a number");
+        let ( writer, reader ) = setup_io_with_input("not a number");
         let choices = ["choice"];
         menu(&choices, writer, reader).unwrap();
     }
@@ -388,7 +459,7 @@ mod tests {
     #[test]
     #[should_panic( expected = "Invalid choice!" )]
     fn menu_returns_error_if_user_input_is_negative() {
-        let ( writer, reader ) = setup_with_input("-1");
+        let ( writer, reader ) = setup_io_with_input("-1");
         let choices = ["choice"];
         menu(&choices, writer, reader).unwrap();
     }
@@ -396,7 +467,7 @@ mod tests {
     #[test]
     #[should_panic( expected = "Invalid choice!" )]
     fn menu_returns_error_if_user_input_is_higher_than_length_of_choice_array() {
-        let ( writer, reader ) = setup_with_input("2");
+        let ( writer, reader ) = setup_io_with_input("2");
         let choices = ["choice"];
         menu(&choices, writer, reader).unwrap();
     }
@@ -404,14 +475,14 @@ mod tests {
     #[test]
     #[should_panic( expected = "Invalid choice!" )]
     fn menu_returns_error_if_user_input_is_0() {
-        let ( writer, reader ) = setup_with_input("0");
+        let ( writer, reader ) = setup_io_with_input("0");
         let choices = ["choice"];
         menu(&choices, writer, reader).unwrap();
     }
 
     #[test]
     fn prompt_sends_prompt_char_to_given_print_fn() {
-        let ( mut writer, reader ) = setup();
+        let ( mut writer, reader ) = setup_io();
         prompt(&mut writer, reader);
 
         assert_eq!(writer.written_lines.get(0), Some( &( "> ").to_string() ));
@@ -419,19 +490,10 @@ mod tests {
 
     #[test]
     fn prompt_returns_user_input() {
-        let ( writer, reader ) = setup_with_input("given input");
+        let ( writer, reader ) = setup_io_with_input("given input");
         let actual = prompt(writer, reader);
 
         assert_eq!(actual, String::from("given input"))
-    }
-
-    #[test]
-    fn gen_num_returns_number_from_0_to_100() {
-        for _ in 0..10^100 {
-            let actual = gen_num(&mut rand::thread_rng());
-            let max = 100;
-            assert!(actual <= max, "{actual} is not less than {max}")
-        }
     }
 
     #[test]
@@ -465,5 +527,17 @@ mod tests {
         };
 
         assert!(reason.contains("too low"))
+    }
+
+    #[test]
+    fn play_game_returns_ok_if_guesser_is_correct_on_first_guess() {
+        let ( writer, reader ) = setup_io_with_input("1");
+        let test_secret = 1;
+        let game_result = play_game(|| test_secret, writer, reader);
+
+        match game_result {
+            Ok(()) => assert!(true),
+            Err(err) => assert!(false, "This shouldn't be Err {:?}", err),
+        }
     }
 }
