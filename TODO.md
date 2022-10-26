@@ -7,10 +7,10 @@ TODO
   `gen_range` directly, let's pass a `get_secret_number` fn around and mock
   that guy instead.
 
-- [ ] write tests for `play_game`
+- [x] write tests for `play_game`
   - [x] test first guess correct
   - [x] correct after some n guesses
-  - [ ] quit
-  - [ ] invalid input as guess
+  - [x] quit
+  - [x] invalid input as guess
 
 - [ ] refactor `play_game` fn to `Game` struct

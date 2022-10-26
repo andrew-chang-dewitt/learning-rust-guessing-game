@@ -239,13 +239,15 @@ fn play_game(
             },
             // return error if guess is "quit"
             Err(_) => {
-                keep_guessing = false;
-                write(&mut writer, WriteArgs::Str("Quitting..."));
-
                 if let "quit" = guess_value.as_str() {
+                    keep_guessing = false;
+                    write(&mut writer, WriteArgs::Str("Quitting..."));
                     res = Err(GameError::Quit);
                 } else {
-                    res = Err(GameError::Unknown);
+                    write(
+                        &mut writer,
+                        WriteArgs::Str("Invalid input, please guess an integer belonging to [0,100] or enter 'quit' to quit playing.")
+                    );
                 }
             }
         }
@@ -544,6 +546,54 @@ mod tests {
     #[test]
     fn play_game_returns_ok_if_guesser_is_eventually_correct() {
         let guesses = ["0", "1"];
+        let ( writer, reader ) = setup_io_with_many_inputs(&guesses);
+        let test_secret = 1;
+        let game_result = play_game(|| test_secret, writer, reader);
+
+        match game_result {
+            Ok(()) => assert!(true),
+            Err(err) => assert!(false, "This shouldn't be Err {:?}", err),
+        }
+    }
+
+    #[test]
+    fn play_game_returns_quit_if_user_enters_quit() {
+        let ( writer, reader ) = setup_io_with_input("quit");
+        let test_secret = 1;
+        let game_result = play_game(|| test_secret, writer, reader);
+
+        match game_result {
+            Ok(()) => assert!(false, "This should never happen"),
+            Err(err) => {
+                if let GameError::Quit = err {
+                    assert!(true)
+                } else {
+                    assert!(false, "Err should contain 'quit', not '{:?}'", err)
+                }
+            },
+        }
+    }
+
+    #[test]
+    fn play_game_alerts_guesser_if_input_is_invalid() {
+        let guesses = ["not a valid input", "1"];
+        let ( mut writer, reader ) = setup_io_with_many_inputs(&guesses);
+        let test_secret = 1;
+        play_game(|| test_secret, &mut writer, reader);
+
+        let invalid_input = writer.written_lines
+            .iter()
+            .find(|line| line.contains("Invalid input"));
+
+        match invalid_input {
+            Some(_) => assert!(true),
+            None => assert!(false, "output should include line indicating first input was invalid"),
+        }
+    }
+
+    #[test]
+    fn play_game_allows_user_to_continue_guessing_after_invalid_input() {
+        let guesses = ["not a valid input", "1"];
         let ( writer, reader ) = setup_io_with_many_inputs(&guesses);
         let test_secret = 1;
         let game_result = play_game(|| test_secret, writer, reader);
