@@ -326,6 +326,7 @@ mod tests {
         }
     }
 
+    #[derive(Debug)]
     enum ReaderValues {
         One(String),
         Many(Vec<String>),
@@ -362,6 +363,7 @@ mod tests {
                 },
                 ReaderValues::Many(values) => {
                     if let Some(value) = values.get(self.next_call) {
+                        self.next_call += 1;
                         buf.push_str(value.as_str());
                         Ok(buf.len())
                     } else {
@@ -385,6 +387,7 @@ mod tests {
                 },
                 ReaderValues::Many(values) => {
                     if let Some(value) = values.get(self.next_call) {
+                        self.next_call += 1;
                         buf.push_str(value.as_str());
                         Ok(buf.len())
                     } else {
@@ -409,12 +412,9 @@ mod tests {
     fn setup_io_with_many_inputs(inputs: &[&str]) -> (TestWriter, TestReader) {
         let writer = TestWriter::new();
 
-        let mut values: Vec<String> = Vec::new();
-        for input in inputs {
-            let value: &str = input;
-            values.push(String::from(value));
-        }
-
+        let values: Vec<String> = inputs.iter()
+            .map(|input| String::from(*input))
+            .collect();
         let reader = TestReader::new(ReaderValues::Many(values));
 
         (writer, reader)
@@ -532,6 +532,19 @@ mod tests {
     #[test]
     fn play_game_returns_ok_if_guesser_is_correct_on_first_guess() {
         let ( writer, reader ) = setup_io_with_input("1");
+        let test_secret = 1;
+        let game_result = play_game(|| test_secret, writer, reader);
+
+        match game_result {
+            Ok(()) => assert!(true),
+            Err(err) => assert!(false, "This shouldn't be Err {:?}", err),
+        }
+    }
+
+    #[test]
+    fn play_game_returns_ok_if_guesser_is_eventually_correct() {
+        let guesses = ["0", "1"];
+        let ( writer, reader ) = setup_io_with_many_inputs(&guesses);
         let test_secret = 1;
         let game_result = play_game(|| test_secret, writer, reader);
 

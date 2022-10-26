@@ -9,7 +9,7 @@ TODO
 
 - [ ] write tests for `play_game`
   - [x] test first guess correct
-  - [ ] correct after some n guesses
+  - [x] correct after some n guesses
   - [ ] quit
   - [ ] invalid input as guess
 
