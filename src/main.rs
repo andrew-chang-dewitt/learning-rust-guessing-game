@@ -47,7 +47,7 @@ fn main() {
                         if let Err(value) = game_result {
                             match value {
                                 GameError::Quit => {
-                                    write(&mut output, WriteArgs::Str("You quit."));
+                                    write(&mut output, WriteArgs::Str("You quit. "));
                                 },
                                 GameError::Unknown => {
                                     write(
@@ -241,12 +241,12 @@ fn play_game(
             Err(_) => {
                 if let "quit" = guess_value.as_str() {
                     keep_guessing = false;
-                    write(&mut writer, WriteArgs::Str("Quitting..."));
+                    write(&mut writer, WriteArgs::Str("Quitting...\n"));
                     res = Err(GameError::Quit);
                 } else {
                     write(
                         &mut writer,
-                        WriteArgs::Str("Invalid input, please guess an integer belonging to [0,100] or enter 'quit' to quit playing.")
+                        WriteArgs::Str("Invalid input, please guess an integer belonging to [0,100] or enter 'quit' to quit playing.\n")
                     );
                 }
             }
