@@ -14,3 +14,10 @@ TODO
   - [x] invalid input as guess
 
 - [ ] refactor `play_game` fn to `Game` struct
+  - [ ] takes a `secret`, `reader`, & `writer` on init
+- [ ] refactor `menu` fn to `Menu` struct
+  - [ ] takes `reader` & `writer` on init
+  - [ ] method for defining intro text
+  - [ ] method for adding option text & handler
+  - [ ] method for rendering menu
+  - [ ] method for prompting user with menu & handling response
