@@ -26,6 +26,22 @@ pub fn prompt(mut writer: impl Write, mut reader: impl BufRead) -> String {
     answer.trim().to_string()
 }
 
+#[test]
+fn prompt_sends_prompt_char_to_given_print_fn() {
+    let ( mut writer, reader ) = setup_io();
+    prompt(&mut writer, reader);
+
+    assert_eq!(writer.written_lines.get(0), Some( &( "> ").to_string() ));
+}
+
+#[test]
+fn prompt_returns_user_input() {
+    let ( writer, reader ) = setup_io_with_input("given input");
+    let actual = prompt(writer, reader);
+
+    assert_eq!(actual, String::from("given input"))
+}
+
 pub enum WriteArgs<'a> {
     Fmt(Arguments<'a>),
     Str(&'a str),
