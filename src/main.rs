@@ -1,13 +1,22 @@
 use std::{
+    cmp::Ordering,
     io::{
-        self,
         BufRead,
         Write,
+        stdout,
+        stdin
     },
-    fmt::Arguments,
-    cmp::Ordering, num::ParseIntError
+    num::ParseIntError,
 };
 use rand::{Rng, rngs::ThreadRng};
+
+use crate::io::{
+    prompt,
+    write,
+    WriteArgs,
+};
+
+pub mod io;
 
 const INVALID_CHOICE: &str = "Invalid choice!";
 const MIN_SECRET: u8 = 0;
@@ -20,8 +29,8 @@ const MAX_SECRET: u8 = 100;
  */
 fn main() {
     // get stdin & stdout reader & writer
-    let mut output = io::stdout();
-    let stdin = io::stdin();
+    let mut output = stdout();
+    let stdin = stdin();
     let mut input = stdin.lock();
     // get secret number generator
     let mut rnd = NumberGenerator::new();
@@ -102,47 +111,6 @@ fn menu(
             Err(INVALID_CHOICE)
         }
     } else { Err(INVALID_CHOICE) }
-}
-
-/*
- * Prompt
- *
- * get user input from stdin & return it as a String
- */
-fn prompt(mut writer: impl Write, mut reader: impl BufRead) -> String {
-    let mut answer = String::new();
-
-    // print the prompt char
-    write(&mut writer, WriteArgs::Str( "> " ));
-
-    // get the user's response
-    reader.read_line(&mut answer).unwrap();
-
-    // pad w/ empty line
-    write(&mut writer, WriteArgs::Str( "\n" ));
-
-    answer.trim().to_string()
-}
-
-enum WriteArgs<'a> {
-    Fmt(Arguments<'a>),
-    Str(&'a str),
-}
-
-/*
- * Write
- *
- * Wrapper on using something that implements Write to output to a stream.
- * Takes either a &str or a set of formatted args as the output value.
- */
-fn write(mut writer: impl Write, args: WriteArgs) {
-    match args {
-        WriteArgs::Fmt(x) =>
-            writer.write_fmt(x).unwrap(),
-        WriteArgs::Str(x) =>
-            writer.write_fmt(format_args!("{}", x)).unwrap(),
-    }
-    writer.flush().unwrap();
 }
 
 /*
@@ -258,7 +226,7 @@ fn play_game(
 
 #[cfg(test)]
 mod tests {
-    use std::{io::Read, fmt};
+    use std::{io::{self, Read }, fmt};
 
     use super::*;
 
@@ -480,22 +448,6 @@ mod tests {
         let ( writer, reader ) = setup_io_with_input("0");
         let choices = ["choice"];
         menu(&choices, writer, reader).unwrap();
-    }
-
-    #[test]
-    fn prompt_sends_prompt_char_to_given_print_fn() {
-        let ( mut writer, reader ) = setup_io();
-        prompt(&mut writer, reader);
-
-        assert_eq!(writer.written_lines.get(0), Some( &( "> ").to_string() ));
-    }
-
-    #[test]
-    fn prompt_returns_user_input() {
-        let ( writer, reader ) = setup_io_with_input("given input");
-        let actual = prompt(writer, reader);
-
-        assert_eq!(actual, String::from("given input"))
     }
 
     #[test]
