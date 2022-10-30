@@ -82,6 +82,28 @@ pub mod test_utils {
         },
     };
 
+    pub fn setup_io() -> (TestWriter, TestReader) {
+        setup_io_with_input("1")
+    }
+
+    pub fn setup_io_with_input(input: &str) -> (TestWriter, TestReader) {
+        let writer = TestWriter::new();
+        let reader = TestReader::new(ReaderValues::One( String::from(input) ));
+
+        (writer, reader)
+    }
+
+    pub fn setup_io_with_many_inputs(inputs: &[&str]) -> (TestWriter, TestReader) {
+        let writer = TestWriter::new();
+
+        let values: Vec<String> = inputs.iter()
+            .map(|input| String::from(*input))
+            .collect();
+        let reader = TestReader::new(ReaderValues::Many(values));
+
+        (writer, reader)
+    }
+
     pub struct TestWriter {
         pub written_lines: Vec<String>,
         line_to_write: Option<String>,
@@ -218,27 +240,5 @@ pub mod test_utils {
                 },
             }
         }
-    }
-
-    pub fn setup_io() -> (TestWriter, TestReader) {
-        setup_io_with_input("1")
-    }
-
-    pub fn setup_io_with_input(input: &str) -> (TestWriter, TestReader) {
-        let writer = TestWriter::new();
-        let reader = TestReader::new(ReaderValues::One( String::from(input) ));
-
-        (writer, reader)
-    }
-
-    pub fn setup_io_with_many_inputs(inputs: &[&str]) -> (TestWriter, TestReader) {
-        let writer = TestWriter::new();
-
-        let values: Vec<String> = inputs.iter()
-            .map(|input| String::from(*input))
-            .collect();
-        let reader = TestReader::new(ReaderValues::Many(values));
-
-        (writer, reader)
     }
 }
