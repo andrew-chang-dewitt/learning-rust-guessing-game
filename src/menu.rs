@@ -1,19 +1,9 @@
-use std::io::{
-    Write,
-    BufRead
-};
+use std::io::{BufRead, Write};
 
 use crate::constants::*;
-use crate::io::{
-    prompt,
-    write,
-    WriteArgs,
-};
 #[cfg(test)]
-use crate::io::test_utils::{
-    setup_io,
-    setup_io_with_input,
-};
+use crate::io::test_utils::{setup_io, setup_io_with_input};
+use crate::io::{prompt, write, WriteArgs};
 
 /// Take an array of strings and print them as choices in a menu. Then,
 /// prompt user to choose one of the choices by entering a number. Finally,
@@ -21,14 +11,17 @@ use crate::io::test_utils::{
 pub fn menu(
     choices: &[&str],
     mut writer: impl Write,
-    mut reader: impl BufRead
+    mut reader: impl BufRead,
 ) -> Result<usize, &'static str> {
-    write(&mut writer, WriteArgs::Str( "\nPlease choose from the following...\n" ));
+    write(
+        &mut writer,
+        WriteArgs::Str("\nPlease choose from the following...\n"),
+    );
 
     for (index, choice) in choices.iter().enumerate() {
         write(
             &mut writer,
-            WriteArgs::Fmt( format_args!( "{}) {}\n", index + 1, choice ))
+            WriteArgs::Fmt(format_args!("{}) {}\n", index + 1, choice)),
         );
     }
 
@@ -40,21 +33,27 @@ pub fn menu(
         } else {
             Err(INVALID_CHOICE)
         }
-    } else { Err(INVALID_CHOICE) }
+    } else {
+        Err(INVALID_CHOICE)
+    }
 }
 
 #[test]
 fn menu_prints_generic_first_line() {
-    let ( mut writer, reader ) = setup_io();
+    let (mut writer, reader) = setup_io();
     let choices = ["first", "second"];
     menu(&choices, &mut writer, reader).unwrap();
 
-    assert!(writer.written_lines.get(0).unwrap().contains("Please choose from the following..."));
+    assert!(writer
+        .written_lines
+        .get(0)
+        .unwrap()
+        .contains("Please choose from the following..."));
 }
 
 #[test]
 fn menu_passes_given_choices_to_given_print_fn() {
-    let ( mut writer, reader ) = setup_io();
+    let (mut writer, reader) = setup_io();
     let choices = ["first", "second"];
     menu(&choices, &mut writer, reader).unwrap();
 
@@ -64,7 +63,7 @@ fn menu_passes_given_choices_to_given_print_fn() {
 
 #[test]
 fn menu_returns_user_input() {
-    let ( writer, reader ) = setup_io_with_input("1");
+    let (writer, reader) = setup_io_with_input("1");
     let choices = ["choice"];
     let response = menu(&choices, writer, reader);
 
@@ -72,33 +71,33 @@ fn menu_returns_user_input() {
 }
 
 #[test]
-#[should_panic( expected = "Invalid choice!" )]
+#[should_panic(expected = "Invalid choice!")]
 fn menu_returns_error_if_user_input_is_not_a_number() {
-    let ( writer, reader ) = setup_io_with_input("not a number");
+    let (writer, reader) = setup_io_with_input("not a number");
     let choices = ["choice"];
     menu(&choices, writer, reader).unwrap();
 }
 
 #[test]
-#[should_panic( expected = "Invalid choice!" )]
+#[should_panic(expected = "Invalid choice!")]
 fn menu_returns_error_if_user_input_is_negative() {
-    let ( writer, reader ) = setup_io_with_input("-1");
+    let (writer, reader) = setup_io_with_input("-1");
     let choices = ["choice"];
     menu(&choices, writer, reader).unwrap();
 }
 
 #[test]
-#[should_panic( expected = "Invalid choice!" )]
+#[should_panic(expected = "Invalid choice!")]
 fn menu_returns_error_if_user_input_is_higher_than_length_of_choice_array() {
-    let ( writer, reader ) = setup_io_with_input("2");
+    let (writer, reader) = setup_io_with_input("2");
     let choices = ["choice"];
     menu(&choices, writer, reader).unwrap();
 }
 
 #[test]
-#[should_panic( expected = "Invalid choice!" )]
+#[should_panic(expected = "Invalid choice!")]
 fn menu_returns_error_if_user_input_is_0() {
-    let ( writer, reader ) = setup_io_with_input("0");
+    let (writer, reader) = setup_io_with_input("0");
     let choices = ["choice"];
     menu(&choices, writer, reader).unwrap();
 }

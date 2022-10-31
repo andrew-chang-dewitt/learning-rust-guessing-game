@@ -1,20 +1,15 @@
-use rand::{
-    Rng,
-    rngs::ThreadRng,
-};
+use rand::{rngs::ThreadRng, Rng};
 
 use crate::constants::*;
 
 /// Generate a secret number between MIN_SECRET & MAX_SECRET
 pub struct NumberGenerator {
-    thread_rng: Option<ThreadRng>
+    thread_rng: Option<ThreadRng>,
 }
 
 impl NumberGenerator {
     pub fn new() -> Self {
-        NumberGenerator {
-            thread_rng: None,
-        }
+        NumberGenerator { thread_rng: None }
     }
 
     pub fn gen_secret(&mut self) -> u8 {
@@ -34,3 +29,8 @@ impl NumberGenerator {
     }
 }
 
+impl Default for NumberGenerator {
+    fn default() -> Self {
+        Self::new()
+    }
+}

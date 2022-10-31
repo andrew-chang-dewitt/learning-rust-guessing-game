@@ -1,19 +1,12 @@
-use std::io::{
-    stdout,
-    stdin,
-};
+use std::io::{stdin, stdout};
 
-use crate::constants::*;
-use crate::game::{
-    GameError,
-    play_game,
+use crate::{
+    constants::INVALID_CHOICE,
+    game::{play_game, GameError},
+    io::{write, WriteArgs},
+    menu::menu,
+    random::NumberGenerator,
 };
-use crate::io::{
-    write,
-    WriteArgs,
-};
-use crate::menu::menu;
-use crate::random::NumberGenerator;
 
 pub mod constants;
 pub mod game;
@@ -33,7 +26,10 @@ fn main() {
     let mut rnd = NumberGenerator::new();
 
     // greet the user
-    write(&mut output, WriteArgs::Str( "Welcome to the guessing game!\n\n" ));
+    write(
+        &mut output,
+        WriteArgs::Str("Welcome to the guessing game!\n\n"),
+    );
 
     // set up the loop
     let mut playing: bool = true;
@@ -54,26 +50,26 @@ fn main() {
                             match value {
                                 GameError::Quit => {
                                     write(&mut output, WriteArgs::Str("You quit. "));
-                                },
+                                }
                                 GameError::Unknown => {
                                     write(
                                         &mut output,
-                                        WriteArgs::Str("An unknown Error occurred.")
+                                        WriteArgs::Str("An unknown Error occurred."),
                                     );
-                                },
+                                }
                             }
                         } else {
                             write(&mut output, WriteArgs::Str("You won!\n"));
                         }
 
                         write(&mut output, WriteArgs::Str("Play again?\n"));
-                    },
+                    }
                     // exit -> exit loop
                     2 => playing = false,
                     // not an allowable input
                     _ => println!("{}", INVALID_CHOICE),
                 }
-            },
+            }
             Err(reason) => println!("{}", reason),
         }
     }
