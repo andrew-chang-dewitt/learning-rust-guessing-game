@@ -96,7 +96,7 @@ impl<W: Write, R: BufRead> Game<W, R> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use crate::io::test_utils::{
         setup_io, setup_io_with_input, setup_io_with_many_inputs, TestReader, TestWriter,
     };
