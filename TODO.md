@@ -13,6 +13,11 @@ TODO
   - [x] quit
   - [x] invalid input as guess
 
+- [x] refactor game functionality to own module
+  - [x] `play_game`
+  - [x] `GameError`
+  - [x] `evaluate`
+  - [x] tests
 - [ ] refactor `play_game` fn to `Game` struct
   - [ ] takes a `secret`, `reader`, & `writer` on init
 - [ ] refactor `menu` fn to `Menu` struct
