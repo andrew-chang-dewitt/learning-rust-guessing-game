@@ -30,22 +30,6 @@ pub fn prompt(mut writer: impl Write, mut reader: impl BufRead) -> String {
     answer.trim().to_string()
 }
 
-#[test]
-fn prompt_sends_prompt_char_to_given_print_fn() {
-    let (mut writer, reader) = test_utils::setup_io();
-    prompt(&mut writer, reader);
-
-    assert_eq!(writer.written_lines.get(0), Some(&("> ").to_string()));
-}
-
-#[test]
-fn prompt_returns_user_input() {
-    let (writer, reader) = test_utils::setup_io_with_input("given input");
-    let actual = prompt(writer, reader);
-
-    assert_eq!(actual, String::from("given input"))
-}
-
 /// The types of data allowable as output to give to `write()`
 ///
 /// Either a set of Format Arguments or a string slice.
@@ -75,6 +59,27 @@ pub fn write(mut writer: impl Write, args: WriteArgs) {
         WriteArgs::Str(x) => writer.write_fmt(format_args!("{}", x)).unwrap(),
     }
     writer.flush().unwrap();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn prompt_sends_prompt_char_to_given_print_fn() {
+        let (mut writer, reader) = test_utils::setup_io();
+        prompt(&mut writer, reader);
+
+        assert_eq!(writer.written_lines.get(0), Some(&("> ").to_string()));
+    }
+
+    #[test]
+    fn prompt_returns_user_input() {
+        let (writer, reader) = test_utils::setup_io_with_input("given input");
+        let actual = prompt(writer, reader);
+
+        assert_eq!(actual, String::from("given input"))
+    }
 }
 
 /// Testing utilities for working with Write & Read streams
