@@ -251,7 +251,7 @@ mod tests {
         let guesses = ["not a valid input", "1"];
         let ( mut writer, reader ) = setup_io_with_many_inputs(&guesses);
         let test_secret = 1;
-        play_game(|| test_secret, &mut writer, reader);
+        play_game(|| test_secret, &mut writer, reader).unwrap();
 
         let invalid_input = writer.written_lines
             .iter()
