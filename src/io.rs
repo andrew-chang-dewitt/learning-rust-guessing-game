@@ -6,11 +6,19 @@ use std::{
     }
 };
 
-/*
- * Prompt
- *
- * get user input from stdin & return it as a String
- */
+
+/// Get user input from write stream (e.g. stdin) & return it as a String.
+///
+/// Takes a write stream & a read stream, implementing Write & BufRead.
+///
+/// # Example
+///
+/// // get stdin & stdout reader & writer
+/// let mut output = stdout();
+/// let stdin = stdin();
+/// let mut input = stdin.lock();
+/// let user_input = prompt(&mut output, &mut input)
+/// // do something with input...
 pub fn prompt(mut writer: impl Write, mut reader: impl BufRead) -> String {
     let mut answer = String::new();
 
@@ -42,17 +50,29 @@ fn prompt_returns_user_input() {
     assert_eq!(actual, String::from("given input"))
 }
 
+/// The types of data allowable as output to give to `write()`
+///
+/// Either a set of Format Arguments or a string slice.
+///
+/// # Example
+///
+/// let args = WriteArgs::Fmt(format_args!("{}", "Hello World"));
+/// let slice = WriteArgs::Str("A slice");
 pub enum WriteArgs<'a> {
     Fmt(Arguments<'a>),
     Str(&'a str),
 }
 
-/*
- * Write
- *
- * Wrapper on using something that implements Write to output to a stream.
- * Takes either a &str or a set of formatted args as the output value.
- */
+/// Writes given args to given write stream.
+///
+/// Used to encapsulate writing with dependency injection to make it more easily
+/// testable.
+///
+/// # Example
+/// // get stdin & stdout reader & writer
+/// let mut output = stdout();
+/// write(&mut output, WriteArgs::Str("Hello World!"))
+/// // prints "Hello World!" to stdout
 pub fn write(mut writer: impl Write, args: WriteArgs) {
     match args {
         WriteArgs::Fmt(x) =>
@@ -63,6 +83,7 @@ pub fn write(mut writer: impl Write, args: WriteArgs) {
     writer.flush().unwrap();
 }
 
+/// Testing utilities for working with Write & Read streams
 #[cfg(test)]
 pub mod test_utils {
     use std::{
@@ -82,10 +103,39 @@ pub mod test_utils {
         },
     };
 
+    /// Setup a Write stream & a Read stream for testing with user input of "1"
+    ///
+    /// # Example
+    ///
+    /// let ( mut writer, reader ) = setup_io();
+    ///
+    /// write(&mut writer, WriteArgs::Str("Hello World!"));
+    /// assert_eq!(
+    ///     writer.written_lines.get(0).unwrap(),
+    ///     String::from("Hello World!")
+    /// );
+    ///
+    /// let user_input = prompt(&mut writer, reader);
+    /// assert_eq!(
+    ///     user_input,
+    ///     String::from("1")
+    /// );
     pub fn setup_io() -> (TestWriter, TestReader) {
         setup_io_with_input("1")
     }
 
+    /// Setup a Write stream & a Read stream for testing with given string as the
+    /// simulated user input
+    ///
+    /// # Example
+    ///
+    /// let ( mut writer, reader ) = setup_io_with_input("This is input");
+    ///
+    /// let user_input = prompt(&mut writer, reader);
+    /// assert_eq!(
+    ///     user_input,
+    ///     String::from("This is input")
+    /// );
     pub fn setup_io_with_input(input: &str) -> (TestWriter, TestReader) {
         let writer = TestWriter::new();
         let reader = TestReader::new(ReaderValues::One( String::from(input) ));
@@ -93,6 +143,26 @@ pub mod test_utils {
         (writer, reader)
     }
 
+    /// Setup a Write stream & a Read stream for testing with given list of
+    /// strings to be read as simulated user input in index order.
+    ///
+    /// # Example
+    ///
+    /// let inputs = ["first input", "second input", "last input"];
+    /// let ( mut writer, reader ) = setup_io_with_many_inputs(&inputs);
+    ///
+    /// assert_eq!(
+    ///     prompt(&mut writer, reader),
+    ///     Ok(String::from("first input"))
+    /// );
+    /// assert_eq!(
+    ///     prompt(&mut writer, reader),
+    ///     Ok(String::from("second input"))
+    /// );
+    /// assert_eq!(
+    ///     prompt(&mut writer, reader),
+    ///     Ok(String::from("last input"))
+    /// );
     pub fn setup_io_with_many_inputs(inputs: &[&str]) -> (TestWriter, TestReader) {
         let writer = TestWriter::new();
 
