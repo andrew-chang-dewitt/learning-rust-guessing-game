@@ -2,7 +2,7 @@ use std::io::{stdin, stdout};
 
 use crate::{
     constants::INVALID_CHOICE,
-    game::{play_game, GameError},
+    game::{Game, GameError},
     io::{write, WriteArgs},
     menu::menu,
     random::NumberGenerator,
@@ -39,13 +39,17 @@ fn main() {
         let choices = ["play game", "exit"];
         let res = menu(&choices, &mut output, &mut input);
 
+        // init new game
+        let secret = rnd.gen_secret();
+        let mut game = Game::new(secret, &mut output, &mut input);
+
         // handle user choice
         match res {
             Ok(choice) => {
                 match choice {
                     // play game -> enter game
                     1 => {
-                        let game_result = play_game(|| rnd.gen_secret(), &mut output, &mut input);
+                        let game_result = game.play();
                         if let Err(value) = game_result {
                             match value {
                                 GameError::Quit => {

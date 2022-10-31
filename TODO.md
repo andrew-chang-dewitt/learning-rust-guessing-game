@@ -18,8 +18,10 @@ TODO
   - [x] `GameError`
   - [x] `evaluate`
   - [x] tests
-- [ ] refactor `play_game` fn to `Game` struct
-  - [ ] takes a `secret`, `reader`, & `writer` on init
+- [x] refactor `play_game` & `evaluate` fns to `Game` struct
+  - [x] takes a `secret`, `reader`, & `writer` on init
+  - [x] exposes game play through public `play` method
+  - [x] uses private `evaluate` method to evaluate guesses
 - [ ] refactor `menu` fn to `Menu` struct
   - [ ] takes `reader` & `writer` on init
   - [ ] method for defining intro text
