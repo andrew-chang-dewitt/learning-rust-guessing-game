@@ -20,13 +20,13 @@ pub enum GameError {
 /// guess correctly.
 pub struct Game<W: Write, R: BufRead> {
     reader: R,
-    secret: u8,
+    secret: usize,
     writer: W,
 }
 
 impl<W: Write, R: BufRead> Game<W, R> {
     /// Create a new Game instance with the given secret number & io streams.
-    pub fn new(secret: u8, writer: W, reader: R) -> Self {
+    pub fn new(secret: usize, writer: W, reader: R) -> Self {
         Game {
             secret,
             writer,
@@ -48,7 +48,7 @@ impl<W: Write, R: BufRead> Game<W, R> {
             // prompt for guess
             write(&mut self.writer, WriteArgs::Str("Guess a number...\n"));
             let guess_value = prompt(&mut self.writer, &mut self.reader);
-            let guess_parsed: Result<u8, ParseIntError> = guess_value.parse();
+            let guess_parsed: Result<usize, ParseIntError> = guess_value.parse();
             match guess_parsed {
                 // if guess parses to int evaluate it
                 Ok(guess) => {
@@ -86,7 +86,7 @@ impl<W: Write, R: BufRead> Game<W, R> {
 
     /// Compare two numbers and return Ok if equal, otherwise Err with value of too
     /// high or too low if not equal.
-    fn evaluate(&self, actual: u8) -> Result<(), String> {
+    fn evaluate(&self, actual: usize) -> Result<(), String> {
         match actual.cmp(&self.secret) {
             Ordering::Equal => Ok(()),
             Ordering::Less => Err(format!("{} is too low!", actual)),
@@ -103,7 +103,7 @@ mod tests {
 
     use super::*;
 
-    pub fn setup_game_with_secret(secret: u8) -> Game<TestWriter, TestReader> {
+    pub fn setup_game_with_secret(secret: usize) -> Game<TestWriter, TestReader> {
         let (writer, reader) = setup_io();
         Game::new(secret, writer, reader)
     }

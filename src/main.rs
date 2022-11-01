@@ -1,7 +1,7 @@
 use std::io::{stdin, stdout};
 
 use crate::{
-    constants::INVALID_CHOICE,
+    constants::{INVALID_CHOICE, MAX_SECRET, MIN_SECRET},
     game::{Game, GameError},
     io::{write, WriteArgs},
     menu::menu,
@@ -23,7 +23,7 @@ fn main() {
     let stdin = stdin();
     let mut input = stdin.lock();
     // get secret number generator
-    let mut rnd = NumberGenerator::new();
+    let mut rnd = NumberGenerator::new(MIN_SECRET, MAX_SECRET);
 
     // greet the user
     write(
